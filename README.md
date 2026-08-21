@@ -1,4 +1,4 @@
-# AI-Driven Auto-Scaler System
+# Cloud Native AI-Predictive Kubernetes Autoscaler Platform
 ## Final Year Project - MERN + Python ML
 
 ### System Overview
