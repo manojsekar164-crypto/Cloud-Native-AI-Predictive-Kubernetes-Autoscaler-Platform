@@ -191,11 +191,11 @@ exports.getScalingDecision = async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Scale decision error:", err);
 
     res.status(500).json({
       success: false,
-      error: err.message,
+      error: err.message || String(err) || "Internal server error",
     });
   }
 };
