@@ -8,32 +8,62 @@ const {
   predictedLoadGauge,
 } = require("../metrics/metrics");
 
+const { isConnected } = require("../config/db");
+
+// In-memory buffer to keep dashboard functioning even when MongoDB is offline/unreachable
+const inMemoryMetrics = [];
+
+async function getRecentMetrics(limit = 20) {
+  if (isConnected()) {
+    try {
+      const records = await Metric.find().sort({ timestamp: -1 }).limit(limit);
+      if (records && records.length > 0) {
+        return records;
+      }
+    } catch (err) {
+      console.warn("⚠️ MongoDB query error, using in-memory buffer:", err.message);
+    }
+  }
+  return inMemoryMetrics.slice(-limit).reverse();
+}
+
 // =========================
 // Save CPU Metric
 // =========================
 exports.saveMetric = async (req, res) => {
   try {
     const { cpuLoad } = req.body;
-
-    const metric = new Metric({
+    const metricDoc = {
       cpuLoad,
       timestamp: new Date(),
-    });
+    };
 
-    await metric.save();
+    let savedMetric = metricDoc;
+
+    if (isConnected()) {
+      try {
+        const metric = new Metric(metricDoc);
+        await metric.save();
+        savedMetric = metric;
+      } catch (dbErr) {
+        console.warn("⚠️ MongoDB save failed, buffering in memory:", dbErr.message);
+        inMemoryMetrics.push(metricDoc);
+        if (inMemoryMetrics.length > 100) inMemoryMetrics.shift();
+      }
+    } else {
+      inMemoryMetrics.push(metricDoc);
+      if (inMemoryMetrics.length > 100) inMemoryMetrics.shift();
+    }
 
     cpuLoadGauge.set(cpuLoad);
 
-    const metrics = await Metric.find()
-      .sort({ timestamp: -1 })
-      .limit(5);
+    const metrics = await getRecentMetrics(5);
 
     if (metrics.length >= 3) {
-      const loads = metrics.reverse().map((m) => m.cpuLoad);
+      const loads = metrics.slice().reverse().map((m) => m.cpuLoad);
 
       try {
         const prediction = await predictionService.predict(loads);
-
         const predictedLoad = prediction.predicted_load;
 
         predictedLoadGauge.set(predictedLoad);
@@ -41,16 +71,11 @@ exports.saveMetric = async (req, res) => {
         console.log("🤖 Predicted Load:", predictedLoad);
         console.log("📈 History:", loads);
 
-        const decision =
-          await decisionEngine.evaluate(predictedLoad);
-
+        const decision = await decisionEngine.evaluate(predictedLoad);
         console.log("🧠 Decision:", decision);
 
       } catch (err) {
-        console.error(
-          "Prediction/Decision Error:",
-          err.message
-        );
+        console.error("Prediction/Decision Error:", err.message);
       }
     }
 
@@ -59,7 +84,8 @@ exports.saveMetric = async (req, res) => {
     res.status(201).json({
       success: true,
       message: "Metric saved successfully",
-      data: metric,
+      data: savedMetric,
+      storage: isConnected() ? "mongodb" : "in-memory"
     });
 
   } catch (err) {
@@ -76,14 +102,12 @@ exports.saveMetric = async (req, res) => {
 exports.getMetrics = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 20;
-
-    const metrics = await Metric.find()
-      .sort({ timestamp: -1 })
-      .limit(limit);
+    const metrics = await getRecentMetrics(limit);
 
     res.json({
       success: true,
-      data: metrics.reverse(),
+      data: metrics.slice().reverse(),
+      storage: isConnected() ? "mongodb" : "in-memory"
     });
 
   } catch (err) {
@@ -99,9 +123,7 @@ exports.getMetrics = async (req, res) => {
 // =========================
 exports.getPrediction = async (req, res) => {
   try {
-    const metrics = await Metric.find()
-      .sort({ timestamp: -1 })
-      .limit(5);
+    const metrics = await getRecentMetrics(5);
 
     if (metrics.length < 3) {
       return res.json({
@@ -110,13 +132,9 @@ exports.getPrediction = async (req, res) => {
       });
     }
 
-    const loads = metrics.reverse().map((m) => m.cpuLoad);
-
-    const prediction =
-      await predictionService.predict(loads);
-
-    const predictedLoad =
-      prediction.predicted_load;
+    const loads = metrics.slice().reverse().map((m) => m.cpuLoad);
+    const prediction = await predictionService.predict(loads);
+    const predictedLoad = prediction.predicted_load;
 
     predictedLoadGauge.set(predictedLoad);
 
@@ -124,6 +142,7 @@ exports.getPrediction = async (req, res) => {
       success: true,
       predicted_load: predictedLoad,
       input_loads: loads,
+      storage: isConnected() ? "mongodb" : "in-memory"
     });
 
   } catch (err) {
@@ -139,9 +158,7 @@ exports.getPrediction = async (req, res) => {
 // =========================
 exports.getScalingDecision = async (req, res) => {
   try {
-    const metrics = await Metric.find()
-      .sort({ timestamp: -1 })
-      .limit(10);
+    const metrics = await getRecentMetrics(10);
 
     if (metrics.length < 3) {
       return res.json({
@@ -150,7 +167,7 @@ exports.getScalingDecision = async (req, res) => {
       });
     }
 
-    const sorted = metrics.reverse();
+    const sorted = metrics.slice().reverse();
     const loads = sorted.map((m) => m.cpuLoad);
     const currentLoad = loads[loads.length - 1];
 
@@ -170,6 +187,7 @@ exports.getScalingDecision = async (req, res) => {
       predicted_load: predictedLoad,
       decision: decision,
       timestamp: new Date().toISOString(),
+      storage: isConnected() ? "mongodb" : "in-memory"
     });
 
   } catch (err) {
