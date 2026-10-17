@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 let isMongoDBConnected = false;
 
 const connectDB = async () => {
-    const uri = process.env.MONGODB_URI;
+    const uri = process.env.MONGODB_URI || process.env.MONGO_URL || process.env.DATABASE_URL;
     if (!uri) {
-        console.warn('⚠️  MONGODB_URI environment variable not set - Running in simulation mode without persistence');
+        console.warn('⚠️  MONGODB_URI / MONGO_URL environment variable not set - Running in simulation mode without persistence');
         isMongoDBConnected = false;
         return;
     }
