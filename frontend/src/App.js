@@ -3,9 +3,15 @@ import axios from 'axios';
 import Dashboard from './components/Dashboard';
 import './App.css';
 
-// API URL from environment variable
-// Fallback to localhost for local development, and normalize to prevent double /api or missing /api
-const rawApiUrl = (process.env.REACT_APP_API_URL || 'http://localhost:4000/api').trim().replace(/\/+$/, '');
+// API URL from environment variable or intelligent domain fallback
+// If REACT_APP_API_URL is set, use it.
+// If running on localhost/127.0.0.1, fallback to local backend (http://localhost:4000/api).
+// If deployed in cloud (e.g. *.vercel.app), default to the live production Railway backend!
+const defaultApiUrl = (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
+    ? 'http://localhost:4000/api'
+    : 'https://cloud-native-ai-predictive-kubernetes-autoscaler-production.up.railway.app/api';
+
+const rawApiUrl = (process.env.REACT_APP_API_URL || defaultApiUrl).trim().replace(/\/+$/, '');
 const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`;
 
 function App() {
