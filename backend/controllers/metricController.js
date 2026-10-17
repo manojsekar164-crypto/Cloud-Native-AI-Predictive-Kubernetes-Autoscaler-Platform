@@ -1,187 +1,214 @@
-const Metric = require('../models/Metric');
-const axios = require('axios');
+const Metric = require("../models/Metric");
 
-// Save CPU metric to database
+const predictionService = require("../services/predictionService");
+const decisionEngine = require("../services/decisionEngine");
+
+const {
+  cpuLoadGauge,
+  predictedLoadGauge,
+} = require("../metrics/metrics");
+
+// =========================
+// Save CPU Metric
+// =========================
 exports.saveMetric = async (req, res) => {
-    try {
-        const { cpuLoad } = req.body;
+  try {
+    const { cpuLoad } = req.body;
 
-        const metric = new Metric({
-            cpuLoad,
-            timestamp: new Date()
-        });
+    const metric = new Metric({
+      cpuLoad,
+      timestamp: new Date(),
+    });
 
-        await metric.save();
-        console.log(`Saved to DB: ${cpuLoad}`);
-        res.status(201).json({ success: true, message: 'Metric saved successfully', data: metric });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-};
+    await metric.save();
 
+    cpuLoadGauge.set(cpuLoad);
 
-// Get last N metrics
-exports.getMetrics = async (req, res) => {
-    try {
-        const limit = parseInt(req.query.limit) || 20;
+    const metrics = await Metric.find()
+      .sort({ timestamp: -1 })
+      .limit(5);
 
-        const metrics = await Metric.find()
-            .sort({ timestamp: -1 })
-            .limit(limit);
+    if (metrics.length >= 3) {
+      const loads = metrics.reverse().map((m) => m.cpuLoad);
 
-        res.json({ success: true, data: metrics.reverse() });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-};
+      try {
+        const prediction = await predictionService.predict(loads);
 
-// Get ML prediction
-exports.getPrediction = async (req, res) => {
-    try {
-        // Fetch last 5 CPU load values from MongoDB
-        const metrics = await Metric.find()
-            .sort({ timestamp: -1 })
-            .limit(5);
+        const predictedLoad = prediction.predicted_load;
 
-        if (metrics.length < 5) {
-            return res.json({
-                success: false,
-                message: 'Not enough data for prediction (need at least 5 records)'
-            });
-        }
+        predictedLoadGauge.set(predictedLoad);
 
-        // Convert to array of numbers (chronological order)
-        const loads = metrics.reverse().map(m => m.cpuLoad);
+        console.log("🤖 Predicted Load:", predictedLoad);
+        console.log("📈 History:", loads);
 
-        // Call Python Flask ML service
-        const mlResponse = await axios.post(
-            `${process.env.ML_SERVICE_URL}/predict`,
-            { loads }
+        const decision =
+          await decisionEngine.evaluate(predictedLoad);
+
+        console.log("🧠 Decision:", decision);
+
+      } catch (err) {
+        console.error(
+          "Prediction/Decision Error:",
+          err.message
         );
-
-        const predictedLoad = mlResponse.data.predicted_load;
-
-        // Console log showing input and predicted values
-        console.log(`📈 Input loads: [${loads.join(', ')}]`);
-        console.log(`🔮 Predicted load: ${predictedLoad.toFixed(2)}%`);
-
-        res.json({
-            success: true,
-            predicted_load: predictedLoad,
-            input_loads: loads
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+      }
     }
+
+    console.log(`Saved CPU Load: ${cpuLoad}`);
+
+    res.status(201).json({
+      success: true,
+      message: "Metric saved successfully",
+      data: metric,
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
 };
 
-// Get scaling decision
+// =========================
+// Get Metrics
+// =========================
+exports.getMetrics = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 20;
+
+    const metrics = await Metric.find()
+      .sort({ timestamp: -1 })
+      .limit(limit);
+
+    res.json({
+      success: true,
+      data: metrics.reverse(),
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+};
+
+// =========================
+// Get Prediction
+// =========================
+exports.getPrediction = async (req, res) => {
+  try {
+    const metrics = await Metric.find()
+      .sort({ timestamp: -1 })
+      .limit(5);
+
+    if (metrics.length < 3) {
+      return res.json({
+        success: false,
+        message: "Need at least 3 metrics",
+      });
+    }
+
+    const loads = metrics.reverse().map((m) => m.cpuLoad);
+
+    const prediction =
+      await predictionService.predict(loads);
+
+    const predictedLoad =
+      prediction.predicted_load;
+
+    predictedLoadGauge.set(predictedLoad);
+
+    res.json({
+      success: true,
+      predicted_load: predictedLoad,
+      input_loads: loads,
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+};
+
+// =========================
+// Get Scaling Decision
+// =========================
 exports.getScalingDecision = async (req, res) => {
-    try {
-        // Get current load
-        const latestMetric = await Metric.findOne().sort({ timestamp: -1 });
+  try {
+    const metrics = await Metric.find()
+      .sort({ timestamp: -1 })
+      .limit(10);
 
-        if (!latestMetric) {
-            return res.json({
-                success: false,
-                message: 'No metrics available'
-            });
-        }
+    if (metrics.length < 3) {
+      return res.json({
+        success: false,
+        message: "Need at least 3 metrics",
+      });
+    }
 
-        const currentLoad = latestMetric.cpuLoad;
+    const sorted = metrics.reverse();
+    const loads = sorted.map((m) => m.cpuLoad);
+    const currentLoad = loads[loads.length - 1];
 
-        // Fetch last 5 CPU load values for prediction
-        const metrics = await Metric.find()
-            .sort({ timestamp: -1 })
-            .limit(5);
+    const prediction = await predictionService.predict(loads);
+    const predictedLoad = prediction.predicted_load;
 
-        let predictedLoad = currentLoad;
-        let decision = 'No Action';
-        let loads = [];
+    predictedLoadGauge.set(predictedLoad);
+    cpuLoadGauge.set(currentLoad);
 
-        if (metrics.length >= 5) {
-            loads = metrics.reverse().map(m => m.cpuLoad);
+    const decision = await decisionEngine.evaluate(predictedLoad);
 
-            try {
-                // Call Python ML service for prediction
-                const mlResponse = await axios.post(
-                    `${process.env.ML_SERVICE_URL}/predict`,
-                    { loads }
-                );
-                predictedLoad = mlResponse.data.predicted_load;
-            } catch (mlError) {
-                console.error('ML Service Error:', mlError.message);
-            }
-        }
+    console.log(`📊 Current: ${currentLoad}% | 🔮 Predicted: ${predictedLoad}% | ⚡ ${decision}`);
 
-        // Scaling Logic based on PREDICTED load
-        if (predictedLoad > 70) {
-            decision = 'Scaling Up ⬆️';
-            scaleUp();
-        } else if (predictedLoad < 40) {
-            decision = 'Scaling Down ⬇️';
-            scaleDown();
-        } else {
-            decision = 'No Action';
-        }
+    res.json({
+      success: true,
+      current_load: currentLoad,
+      predicted_load: predictedLoad,
+      decision: decision,
+      timestamp: new Date().toISOString(),
+    });
 
-        // Log decision in clean format
-        const time = new Date().toLocaleTimeString('en-US', { hour12: false });
-        console.log(`[Time: ${time}]`);
-        console.log(`Loads from DB: [${loads.join(', ')}]`);
-        console.log(`Predicted Load: ${Math.round(predictedLoad)}`);
-        console.log(`Decision: ${decision}`);
-        console.log('----------------------------------\n');
-
-        res.json({
-            success: true,
-            current_load: currentLoad,
-            predicted_load: predictedLoad,
-            decision
-        });
-    } } catch (error) {
-    console.error("===== SAVE METRIC ERROR =====");
-    console.error(error);
-    console.error("Error message:", error.message);
-    console.error("Error code:", error.code);
-    console.error("Stack:", error.stack);
+  } catch (err) {
+    console.error(err);
 
     res.status(500).json({
-        success: false,
-        error: error.message
+      success: false,
+      error: err.message,
     });
+  }
 };
 
-// Mock AWS Auto-Scaling Functions
-// These simulate cloud instance management
-function scaleUp() {
-    console.log('🚀 Launching new instance...');
-    console.log('✅ Instance i-' + Math.random().toString(36).substr(2, 9) + ' launched');
-    console.log('💰 Current instance count: ' + Math.floor(Math.random() * 5 + 2));
-}
+// =========================
+// Simulation Control
+// =========================
 
-function scaleDown() {
-    console.log('🔻 Terminating instance...');
-    console.log('✅ Instance i-' + Math.random().toString(36).substr(2, 9) + ' terminated');
-    console.log('💰 Current instance count: ' + Math.floor(Math.random() * 3 + 1));
-}
-
-// Start/Stop simulation control
 let isSimulationRunning = true;
 
 exports.startSimulation = (req, res) => {
-    isSimulationRunning = true;
-    console.log('▶️  Simulation started');
-    res.json({ success: true, message: 'Simulation started' });
+  isSimulationRunning = true;
+
+  console.log("▶ Simulation Started");
+
+  res.json({
+    success: true,
+    message: "Simulation Started",
+  });
 };
 
 exports.stopSimulation = (req, res) => {
-    isSimulationRunning = false;
-    console.log('⏸️  Simulation stopped');
-    res.json({ success: true, message: 'Simulation stopped' });
+  isSimulationRunning = false;
+
+  console.log("⏸ Simulation Stopped");
+
+  res.json({
+    success: true,
+    message: "Simulation Stopped",
+  });
 };
 
-exports.getSimulationStatus = () => isSimulationRunning;
+exports.getSimulationStatus = () =>
+  isSimulationRunning;

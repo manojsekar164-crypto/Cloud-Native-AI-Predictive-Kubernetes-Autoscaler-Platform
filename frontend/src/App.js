@@ -4,8 +4,9 @@ import Dashboard from './components/Dashboard';
 import './App.css';
 
 // API URL from environment variable
-// Fallback to localhost for local development
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000/api';
+// Fallback to localhost for local development, and normalize to prevent double /api or missing /api
+const rawApiUrl = (process.env.REACT_APP_API_URL || 'http://localhost:4000/api').trim().replace(/\/+$/, '');
+const API_URL = rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl}/api`;
 
 function App() {
     const [scalingData, setScalingData] = useState(null);

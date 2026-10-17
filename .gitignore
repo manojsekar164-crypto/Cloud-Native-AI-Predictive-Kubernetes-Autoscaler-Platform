@@ -26,3 +26,18 @@ Thumbs.db
 # Python
 venv/
 *.egg-info/
+
+# Additional environment files
+.env.*
+!.env.example
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local files accidentally created in the project
+/kubectl
+/docker
+/backend/kubectl

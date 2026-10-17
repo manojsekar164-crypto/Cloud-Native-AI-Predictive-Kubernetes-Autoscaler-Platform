@@ -14,4 +14,10 @@ router.get('/predict', metricController.getPrediction);
 // GET /api/scale - Get scaling decision
 router.get('/scale', metricController.getScalingDecision);
 
+// POST /api/start - Start simulation
+router.post('/start', metricController.startSimulation);
+
+// POST /api/stop - Stop simulation
+router.post('/stop', metricController.stopSimulation);
+
 module.exports = router;

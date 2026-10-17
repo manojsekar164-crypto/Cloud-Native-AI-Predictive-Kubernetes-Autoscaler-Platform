@@ -4,6 +4,8 @@ kind: Deployment
 metadata:
   name: backend-deployment
   namespace: ai-autoscaler
+  labels:
+    app: backend
 
 spec:
   replicas: 2
@@ -20,6 +22,7 @@ spec:
     spec:
       containers:
         - name: backend
+
           image: manojs0723/project6-backend:latest
           imagePullPolicy: Always
 
@@ -29,6 +32,27 @@ spec:
           envFrom:
             - configMapRef:
                 name: backend-config
-
             - secretRef:
                 name: backend-secret
+
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 4000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 4000
+            initialDelaySeconds: 30
+            periodSeconds: 15

@@ -5,6 +5,9 @@ metadata:
   name: ml-service
   namespace: ai-autoscaler
 
+  labels:
+    app: ml-service
+
 spec:
   replicas: 1
 
@@ -19,10 +22,33 @@ spec:
 
     spec:
       containers:
-      - name: ml-service
-        image: manojs0723/project6-ml-service:latest
+        - name: ml-service
 
-        imagePullPolicy: Always
+          image: manojs0723/project6-ml-service:latest
+          imagePullPolicy: Always
 
-        ports:
-        - containerPort: 5000
+          ports:
+            - containerPort: 5000
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 20
+            periodSeconds: 15

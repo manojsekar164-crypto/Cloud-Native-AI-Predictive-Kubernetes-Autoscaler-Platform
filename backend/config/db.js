@@ -1,13 +1,29 @@
 const mongoose = require('mongoose');
 
+let isMongoDBConnected = false;
+
 const connectDB = async () => {
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+        console.warn('⚠️  MONGODB_URI environment variable not set - Running in simulation mode without persistence');
+        isMongoDBConnected = false;
+        return;
+    }
+
     try {
-        await mongoose.connect(process.env.MONGODB_URI);
+        await mongoose.connect(uri, {
+            serverSelectionTimeoutMS: 5000
+        });
         console.log('✅ MongoDB Connected Successfully');
+        isMongoDBConnected = true;
     } catch (error) {
-        console.error('❌ MongoDB Connection Error:', error.message);
-        process.exit(1);
+        console.warn('⚠️  MongoDB Connection Failed:', error.message);
+        console.warn('   Running with in-memory fallback for current session');
+        isMongoDBConnected = false;
     }
 };
 
+const isConnected = () => isMongoDBConnected;
+
 module.exports = connectDB;
+module.exports.isConnected = isConnected;

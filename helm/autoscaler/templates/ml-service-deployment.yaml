@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: ml-service
+  namespace: {{ .Values.namespace }}
+
+spec:
+  replicas: {{ .Values.mlService.replicaCount }}
+
+  selector:
+    matchLabels:
+      app: ml-service
+
+  template:
+    metadata:
+      labels:
+        app: ml-service
+
+    spec:
+      containers:
+        - name: ml-service
+          image: "{{ .Values.mlService.image.repository }}:{{ .Values.mlService.image.tag }}"
+          imagePullPolicy: {{ .Values.mlService.image.pullPolicy }}
+
+          ports:
+            - containerPort: {{ .Values.mlService.service.targetPort }}

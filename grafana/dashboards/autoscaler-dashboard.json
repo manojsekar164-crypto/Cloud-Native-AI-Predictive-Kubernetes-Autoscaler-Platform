@@ -1,0 +1,498 @@
+{
+    "id": null,
+    "uid": "autoscaler-main",
+    "title": "AI Auto-Scaler Dashboard",
+    "tags": [
+        "autoscaler"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "5s",
+    "panels": [
+        {
+            "id": 1,
+            "title": "Current CPU Load %",
+            "type": "gauge",
+            "gridPos": {
+                "x": 0,
+                "y": 0,
+                "w": 6,
+                "h": 6
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "showThresholdLabels": false,
+                "showThresholdMarkers": true
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "min": 0,
+                    "max": 100,
+                    "unit": "percent",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 50
+                            },
+                            {
+                                "color": "red",
+                                "value": 70
+                            }
+                        ]
+                    }
+                }
+            },
+            "targets": [
+                {
+                    "expr": "cpu_load_percent",
+                    "legendFormat": "Current CPU Load",
+                    "refId": "A"
+                }
+            ],
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            }
+        },
+        {
+            "id": 2,
+            "title": "Predicted CPU Load %",
+            "type": "gauge",
+            "gridPos": {
+                "x": 6,
+                "y": 0,
+                "w": 6,
+                "h": 6
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "showThresholdLabels": false,
+                "showThresholdMarkers": true
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "min": 0,
+                    "max": 100,
+                    "unit": "percent",
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 50
+                            },
+                            {
+                                "color": "red",
+                                "value": 70
+                            }
+                        ]
+                    }
+                }
+            },
+            "targets": [
+                {
+                    "expr": "predicted_cpu_load_percent",
+                    "legendFormat": "Predicted CPU Load",
+                    "refId": "A"
+                }
+            ],
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            }
+        },
+        {
+            "id": 3,
+            "title": "Scale Up Events (Total)",
+            "type": "stat",
+            "gridPos": {
+                "x": 12,
+                "y": 0,
+                "w": 6,
+                "h": 3
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "fixedColor": "red",
+                        "mode": "fixed"
+                    },
+                    "unit": "short"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "scale_up_total",
+                    "legendFormat": "Scale Up Events",
+                    "refId": "A"
+                }
+            ],
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            }
+        },
+        {
+            "id": 4,
+            "title": "Scale Down Events (Total)",
+            "type": "stat",
+            "gridPos": {
+                "x": 18,
+                "y": 0,
+                "w": 6,
+                "h": 3
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "fixedColor": "green",
+                        "mode": "fixed"
+                    },
+                    "unit": "short"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "scale_down_total",
+                    "legendFormat": "Scale Down Events",
+                    "refId": "A"
+                }
+            ],
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            }
+        },
+        {
+            "id": 5,
+            "title": "Total HTTP Requests",
+            "type": "stat",
+            "gridPos": {
+                "x": 12,
+                "y": 3,
+                "w": 6,
+                "h": 3
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "colorMode": "background",
+                "graphMode": "none"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "fixedColor": "blue",
+                        "mode": "fixed"
+                    },
+                    "unit": "short"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "http_requests_total",
+                    "legendFormat": "HTTP Requests",
+                    "refId": "A"
+                }
+            ],
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            }
+        },
+        {
+            "id": 6,
+            "title": "HTTP Request Duration (avg seconds)",
+            "type": "stat",
+            "gridPos": {
+                "x": 18,
+                "y": 3,
+                "w": 6,
+                "h": 3
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "colorMode": "background",
+                "graphMode": "none"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "fixedColor": "purple",
+                        "mode": "fixed"
+                    },
+                    "unit": "s"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "rate(http_request_duration_seconds_sum[1m]) / rate(http_request_duration_seconds_count[1m])",
+                    "legendFormat": "Avg Duration",
+                    "refId": "A"
+                }
+            ],
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            }
+        },
+        {
+            "id": 7,
+            "title": "CPU Load vs Predicted Load (Time Series)",
+            "type": "timeseries",
+            "gridPos": {
+                "x": 0,
+                "y": 6,
+                "w": 24,
+                "h": 8
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "min": 0,
+                    "max": 100,
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Predicted CPU Load"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "orange",
+                                    "mode": "fixed"
+                                }
+                            },
+                            {
+                                "id": "custom.lineStyle",
+                                "value": {
+                                    "dash": [
+                                        10,
+                                        5
+                                    ],
+                                    "fill": "dash"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Current CPU Load"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "#6366f1",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "targets": [
+                {
+                    "expr": "cpu_load_percent",
+                    "legendFormat": "Current CPU Load",
+                    "refId": "A"
+                },
+                {
+                    "expr": "predicted_cpu_load_percent",
+                    "legendFormat": "Predicted CPU Load",
+                    "refId": "B"
+                }
+            ],
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            }
+        },
+        {
+            "id": 8,
+            "title": "HTTP Requests Rate (per second)",
+            "type": "timeseries",
+            "gridPos": {
+                "x": 0,
+                "y": 14,
+                "w": 12,
+                "h": 6
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "single"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "reqps",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    },
+                    "color": {
+                        "fixedColor": "blue",
+                        "mode": "fixed"
+                    }
+                }
+            },
+            "targets": [
+                {
+                    "expr": "rate(http_requests_total[1m])",
+                    "legendFormat": "Requests/sec",
+                    "refId": "A"
+                }
+            ],
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            }
+        },
+        {
+            "id": 9,
+            "title": "Scale Up vs Scale Down Events (Rate)",
+            "type": "timeseries",
+            "gridPos": {
+                "x": 12,
+                "y": 14,
+                "w": 12,
+                "h": 6
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Scale Up"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "red",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Scale Down"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "green",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "targets": [
+                {
+                    "expr": "rate(scale_up_total[5m])",
+                    "legendFormat": "Scale Up",
+                    "refId": "A"
+                },
+                {
+                    "expr": "rate(scale_down_total[5m])",
+                    "legendFormat": "Scale Down",
+                    "refId": "B"
+                }
+            ],
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            }
+        }
+    ]
+}

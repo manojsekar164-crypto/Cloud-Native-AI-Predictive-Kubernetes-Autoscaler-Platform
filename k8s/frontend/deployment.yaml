@@ -5,6 +5,9 @@ metadata:
   name: frontend-deployment
   namespace: ai-autoscaler
 
+  labels:
+    app: frontend
+
 spec:
   replicas: 2
 
@@ -20,8 +23,32 @@ spec:
     spec:
       containers:
         - name: frontend
+
           image: manojs0723/project6-frontend:latest
           imagePullPolicy: Always
 
           ports:
             - containerPort: 3000
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 15

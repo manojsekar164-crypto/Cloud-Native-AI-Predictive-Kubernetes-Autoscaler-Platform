@@ -133,6 +133,27 @@ kubectl create secret generic backend-secret \
 - **40% ≤ CPU ≤ 70%** → No Action
 
 ---
+## Kubernetes Secrets
+
+Before deploying, create the required secrets.
+
+### MongoDB Secret
+
+```bash
+kubectl create secret generic mongodb-secret \
+  --from-literal=MONGO_INITDB_ROOT_USERNAME=<username> \
+  --from-literal=MONGO_INITDB_ROOT_PASSWORD=<password> \
+  -n ai-autoscaler
+```
+
+### Backend Secret
+
+```bash
+kubectl create secret generic backend-secret \
+  --from-literal=MONGODB_URI="mongodb://<username>:<password>@mongodb:27017/autoscaler?authSource=admin" \
+  --from-literal=ML_SERVICE_URL="http://ml-service:5000" \
+  -n ai-autoscaler
+```
 
 ## Notes
 - This is a prototype for demonstration purposes

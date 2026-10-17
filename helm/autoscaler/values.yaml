@@ -1,0 +1,53 @@
+namespace: ai-autoscaler
+
+backend:
+  replicaCount: 2
+
+  image:
+    repository: manojs0723/project6-backend
+    tag: latest
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 4000
+    targetPort: 4000
+
+  config:
+    port: "4000"
+    mlServiceUrl: "http://ml-service:5000"
+
+  secret:
+    mongodbUri: "REPLACE_WITH_MONGODB_URI"
+
+frontend:
+  replicaCount: 2
+
+  image:
+    repository: manojs0723/project6-frontend
+    tag: latest
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+
+mlService:
+  replicaCount: 1
+
+  image:
+    repository: manojs0723/project6-ml-service
+    tag: latest
+    pullPolicy: Always
+
+  service:
+    type: ClusterIP
+    port: 5000
+    targetPort: 5000
+
+ingress:
+  enabled: false
+
+autoscaling:
+  enabled: false

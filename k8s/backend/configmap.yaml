@@ -7,4 +7,10 @@ metadata:
 
 data:
   PORT: "4000"
-  ML_SERVICE_URL: "http://ai-service:5000"
+
+  # Update this if your Kubernetes Service has a different name
+  ML_SERVICE_URL: "http://ml-service:5000"
+
+  K8S_NAMESPACE: "ai-autoscaler"
+
+  DEPLOYMENT_NAME: "backend-deployment"

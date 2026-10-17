@@ -9,17 +9,26 @@ function generateCPULoad() {
 function startSimulation() {
     console.log("🔄 Starting CPU Load Simulation...\n");
 
+    const port = process.env.PORT || 4000;
+    const metricUrl = `http://127.0.0.1:${port}/api/metrics`;
+
     setInterval(async () => {
         try {
+            const metricController = require('../controllers/metricController');
+            if (metricController.getSimulationStatus && !metricController.getSimulationStatus()) {
+                return;
+            }
+
             const cpuLoad = generateCPULoad();
 
             const response = await axios.post(
-                "http://localhost:4000/api/metrics",
+                metricUrl,
                 { cpuLoad },
                 {
                     headers: {
                         "Content-Type": "application/json"
-                    }
+                    },
+                    timeout: 4000
                 }
             );
 

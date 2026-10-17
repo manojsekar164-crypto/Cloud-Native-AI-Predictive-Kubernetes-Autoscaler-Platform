@@ -15,5 +15,8 @@
         "mern"
     ],
     "author": "",
-    "license": "MIT"
+    "license": "MIT",
+    "dependencies": {
+        "@kubernetes/client-node": "^1.4.0"
+    }
 }

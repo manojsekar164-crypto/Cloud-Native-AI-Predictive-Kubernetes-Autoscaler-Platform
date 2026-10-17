@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: ml-service
+  namespace: {{ .Values.namespace }}
+
+spec:
+  selector:
+    app: ml-service
+
+  ports:
+    - port: {{ .Values.mlService.service.port }}
+      targetPort: {{ .Values.mlService.service.targetPort }}
+
+  type: {{ .Values.mlService.service.type }}

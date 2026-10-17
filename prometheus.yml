@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 5s # scrape every 5 seconds
+  evaluation_interval: 5s
+
+scrape_configs:
+  # Scrape Prometheus itself
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Scrape your Node.js backend metrics
+  - job_name: "autoscaler-backend"
+    static_configs:
+      - targets: ["backend:4000"]
+    metrics_path: "/metrics"
+    scrape_interval: 5s

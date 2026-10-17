@@ -5,12 +5,17 @@ metadata:
   name: ml-service
   namespace: ai-autoscaler
 
+  labels:
+    app: ml-service
+
 spec:
+  type: ClusterIP
+
   selector:
     app: ml-service
 
   ports:
-  - port: 5000
-    targetPort: 5000
-
-  type: ClusterIP
+    - name: http
+      protocol: TCP
+      port: 5000
+      targetPort: 5000
