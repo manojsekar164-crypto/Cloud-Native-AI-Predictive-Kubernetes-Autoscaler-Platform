@@ -1,7 +1,8 @@
 const axios = require("axios");
 
-const ML_SERVICE_URL =
-  (process.env.ML_SERVICE_URL || "http://localhost:5000").replace(/\/$/, "");
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL
+  ? process.env.ML_SERVICE_URL.replace(/\/$/, "")
+  : null;
 
 class PredictionService {
   calculateFallbackPrediction(loads) {
@@ -36,28 +37,31 @@ class PredictionService {
   }
 
   async predict(cpuHistory) {
-    try {
-      const response = await axios.post(
-        `${ML_SERVICE_URL}/predict`,
-        { cpu_history: cpuHistory },
-        { timeout: 3000 }
-      );
+    // If an external ML microservice URL is configured, try calling it
+    if (ML_SERVICE_URL) {
+      try {
+        const response = await axios.post(
+          `${ML_SERVICE_URL}/predict`,
+          { cpu_history: cpuHistory },
+          { timeout: 2000 }
+        );
 
-      if (response.data && response.data.predicted_load !== undefined) {
-        return response.data;
+        if (response.data && response.data.predicted_load !== undefined) {
+          return response.data;
+        }
+      } catch (error) {
+        console.warn(
+          `⚠️ ML microservice at ${ML_SERVICE_URL} unreachable (${error.message}). Using built-in regression fallback.`
+        );
       }
-    } catch (error) {
-      // Graceful fallback if ML microservice is offline or not yet deployed on Railway
-      console.warn(
-        `⚠️ ML microservice at ${ML_SERVICE_URL} unreachable (${error.message}). Using built-in regression fallback.`
-      );
     }
 
+    // Instant local AI linear regression prediction
     const fallbackLoad = this.calculateFallbackPrediction(cpuHistory);
     return {
       success: true,
       predicted_load: fallbackLoad,
-      method: "Linear Regression (Cloud Resilient Fallback)",
+      method: "Linear Regression (Instant AI Fallback)",
       samples: cpuHistory.length,
     };
   }
